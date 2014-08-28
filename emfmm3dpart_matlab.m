@@ -75,7 +75,7 @@ if( ifevec ~= ifhvec ),
   error('emfmm3dpart: not implemented')
 end
 
-if( nargin > 10 )
+if( ifevectarg ~= ifhvectarg ),
   error('emfmm3dpart: not implemented')
 end
 
@@ -188,7 +188,6 @@ evec = evec - U.fld / (1i*zk);
 end
 
 
-
 if( ifcmvec == 1 ),
 %
 % MFIE operator, E = green3m M = grad x G_k M
@@ -261,6 +260,179 @@ dipvec = [zeros(1,nsource); zeros(1,nsource); ones(1,nsource)];
 hvec = hvec + U.fld / (1i*zk);
 
 end
+
+
+
+if( ifcjvec == 1 && ntarget > 0 ),
+%
+% MFIE operator, H = green3m J = grad x G_k J
+%
+ifcharge = 1;
+ifdipole = 0;
+ifpot = 0;
+iffld = 0;
+ifpottarg = 1;
+iffldtarg = 1;
+
+dipstr = zeros(1,nsource)+1i*zeros(1,nsource);
+dipvec = zeros(3,nsource);
+
+charge = cjvec(1,:);
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,
+       ntarget,target,ifpottarg,iffldtarg);
+x1 = U.pottarg;
+y1 = -U.fldtarg;
+
+charge = cjvec(2,:);
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,
+       ntarget,target,ifpottarg,iffldtarg);
+x2 = U.pottarg;
+y2 = -U.fldtarg;
+
+charge = cjvec(3,:);
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,
+       ntarget,target,ifpottarg,iffldtarg);
+x3 = U.pottarg;
+y3 = -U.fldtarg;
+
+% apply the curl operator
+
+hvectarg(1,:) = hvectarg(1,:) + (y3(2,:)-y2(3,:));
+hvectarg(2,:) = hvectarg(2,:) + (y1(3,:)-y3(1,:));
+hvectarg(3,:) = hvectarg(3,:) + (y2(1,:)-y1(2,:));
+
+
+%
+% EFIE operator, E = (i k) green3e J
+% EFIE operator, E = (i k) G_k J + 1/ (i k )  grad grad G_k J 
+%
+evectarg(1,:) = evectarg(1,:) + x1*1i*zk;
+evectarg(2,:) = evectarg(2,:) + x2*1i*zk;
+evectarg(3,:) = evectarg(3,:) + x3*1i*zk;
+
+ifcharge = 0;
+ifdipole = 1;
+ifpot = 0;
+iffld = 0;
+ifpottarg = 0;
+iffldtarg = 1;
+
+charge = zeros(1,nsource);
+
+dipstr = cjvec(1,:);
+dipvec = [ones(1,nsource); zeros(1,nsource); zeros(1,nsource)];
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,
+       ntarget,target,ifpottarg,iffldtarg);
+
+evectarg = evectarg - U.fldtarg / (1i*zk);
+
+dipstr = cjvec(2,:);
+dipvec = [zeros(1,nsource); ones(1,nsource); zeros(1,nsource)];
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,
+       ntarget,target,ifpottarg,iffldtarg);
+
+evectarg = evectarg - U.fldtarg / (1i*zk);
+
+dipstr = cjvec(3,:);
+dipvec = [zeros(1,nsource); zeros(1,nsource); ones(1,nsource)];
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,
+       ntarget,target,ifpottarg,iffldtarg);
+
+evectarg = evectarg - U.fldtarg / (1i*zk);
+
+
+end
+
+
+if( ifcmvec == 1 && ntarget > 0 ),
+%
+% MFIE operator, E = green3m M = grad x G_k M
+%
+ifcharge = 1;
+ifdipole = 0;
+ifpot = 0;
+iffld = 0;
+ifpottarg = 1;
+iffldtarg = 1;
+
+dipstr = zeros(1,nsource)+1i*zeros(1,nsource);
+dipvec = zeros(3,nsource);
+
+charge = cmvec(1,:);
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,...
+       ntarget,target,ifpottarg,iffldtarg);
+x1 = U.pottarg;
+y1 = -U.fldtarg;
+
+charge = cmvec(2,:);
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,...
+       ntarget,target,ifpottarg,iffldtarg);
+x2 = U.pottarg;
+y2 = -U.fldtarg;
+
+charge = cmvec(3,:);
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,...
+       ntarget,target,ifpottarg,iffldtarg);
+x3 = U.pottarg;
+y3 = -U.fldtarg;
+
+% apply the curl operator
+
+evectarg(1,:) = evectarg(1,:) + (y3(2,:)-y2(3,:));
+evectarg(2,:) = evectarg(2,:) + (y1(3,:)-y3(1,:));
+evectarg(3,:) = evectarg(3,:) + (y2(1,:)-y1(2,:));
+
+
+%
+% EFIE operator, H = -(i k) green3e M
+% EFIE operator, H = -(i k) G_k M - 1/ (i k )  grad grad G_k M
+%
+hvectarg(1,:) = hvectarg(1,:) - x1*1i*zk;
+hvectarg(2,:) = hvectarg(2,:) - x2*1i*zk;
+hvectarg(3,:) = hvectarg(3,:) - x3*1i*zk;
+
+ifcharge = 0;
+ifdipole = 1;
+ifpot = 0;
+iffld = 0;
+ifpottarg = 0;
+iffldtarg = 1;
+
+dipstr = cmvec(1,:);
+dipvec = [ones(1,nsource); zeros(1,nsource); zeros(1,nsource)];
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,...
+       ntarget,target,ifpottarg,iffldtarg);
+
+hvectarg = hvectarg + U.fldtarg / (1i*zk);
+
+dipstr = cmvec(2,:);
+dipvec = [zeros(1,nsource); ones(1,nsource); zeros(1,nsource)];
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,...
+       ntarget,target,ifpottarg,iffldtarg);
+
+hvectarg = hvectarg + U.fldtarg / (1i*zk);
+
+dipstr = cmvec(3,:);
+dipvec = [zeros(1,nsource); zeros(1,nsource); ones(1,nsource)];
+[U]=hfmm3dpart(iprec,zk,nsource,source,...
+       ifcharge,charge,ifdipole,dipstr,dipvec,ifpot,iffld,...
+       ntarget,target,ifpottarg,iffldtarg);
+
+hvectarg = hvectarg + U.fldtarg / (1i*zk);
+
+end
+
 
 
 
