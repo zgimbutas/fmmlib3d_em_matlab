@@ -9,8 +9,8 @@
 geom_type = 2;
 filename_geo = 'sphere180.a.tri';
 filename_geo = 'sphere320.a.tri';
-%filename_geo = 'sphere1280.a.tri';
-%filename_geo = 'sphere2880.a.tri';
+filename_geo = 'sphere1280.a.tri';
+filename_geo = 'sphere2880.a.tri';
 %filename_geo = 'sphere11520.a.tri';
 %filename_geo = 'sphere20480.a.tri';
 %filename_geo = 'cube_r1.a.tri';
@@ -102,7 +102,7 @@ ifhvec = 0;
 ifevectarg = 0;
 ifhvectarg = 1;
 
-[U]=em3dpartdirecttarg_matlab(zk,ntest_source,test_source,...
+[U]=em3dpartdirect(zk,ntest_source,test_source,...
       iftest_cjvec,test_cjvec,iftest_cmvec,test_cmvec,...
       ifevec,ifhvec,nsource,source,ifevectarg,ifhvectarg);
 
@@ -141,7 +141,7 @@ ifevec = 0;
 ifhvec = 0;
 ifevectarg = 1;
 ifhvectarg = 1;
-[U]=em3dpartdirecttarg_matlab(zk,ntest_source,test_source,...
+[U]=em3dpartdirect(zk,ntest_source,test_source,...
       iftest_cjvec,test_cjvec,iftest_cmvec,test_cmvec,...
       ifevec,ifhvec,ntarget,target,ifevectarg,ifhvectarg);
 
@@ -159,7 +159,7 @@ ifcmvec=0;
 cjvec=sol.*repmat(triaarea,3,1);
 cmvec=zeros(3,nsource);
 
-[U]=em3dpartdirecttarg_matlab(zk,nsource,source,...
+[U]=em3dpartdirect(zk,nsource,source,...
       ifcjvec,cjvec,ifcmvec,cmvec,...
       ifevec,ifhvec,ntarget,target,ifevectarg,ifhvectarg);
 

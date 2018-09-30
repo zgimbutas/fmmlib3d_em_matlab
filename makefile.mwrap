@@ -1,0 +1,77 @@
+#
+#  Generate Matlab/Octave MEX files
+#
+#  gfortran > 4.4.0 is strongly recommended
+#
+
+PROJECT = emtools
+MEX_GATEWAY = $(PROJECT)
+
+###TARGET=octave-linux
+TARGET=octave-linux-openmp
+
+###TARGET=octave-linux-intel
+###TARGET=octave-linux-intel-openmp
+
+###TARGET=matlab-linux-a64
+###TARGET=matlab-linux-a64-openmp
+
+###TARGET=matlab-linux-intel-a64
+###TARGET=matlab-linux-a64-intel-openmp
+
+###TARGET=matlab-maci
+###TARGET=matlab-maci-openmp
+###TARGET=matlab-maci64
+###TARGET=matlab-maci64-openmp
+
+###TARGET=matlab-windows-w32
+###TARGET=matlab-windows-w32-openmp
+###TARGET=matlab-windows-w64
+###TARGET=matlab-windows-w64-openmp
+
+include mwrap.inc
+
+
+.f.$(OBJSUF):
+	$(MEX_FC) $(MEX_FLAGS) -c $(FFLAGS) $<
+
+.c.$(OBJSUF):
+	$(MEX_CC) $(MEX_FLAGS) -c $(CFLAGS) $<
+
+.SUFFIXES: .$(OBJSUF) .f .c
+
+
+# SOURCE FILE LIST
+#
+#####vpath .:../src:..:../emlib:../../FMM3D:../../H3DLibraries:../../L3DLibraries:../../Quadratures:../../Geometry:../../Common:../lib:../geo
+
+# SOURCE FILE LIST
+#
+vpath %.f .:./src
+
+
+FSRCS = em3dpartdirecttarg.f emdyadic.f
+
+#
+# object files list
+OBJS    = $(FSRCS:.f=.$(OBJSUF)) 
+#
+
+all: $(OBJS) 
+	$(MW) $(MWFLAGS) $(MEX_GATEWAY) -mb $(PROJECT).mw
+	$(MW) $(MWFLAGS) $(MEX_GATEWAY) -c $(MEX_GATEWAY).c $(PROJECT).mw
+	$(MEX) -v $(MEX_FLAGS) $(MEX_LINK) $(MEX_GATEWAY).c $(OBJS) $(MEX_LIBS)
+
+doc:
+	$(MW) $(MWFLAGS) $(MEX_GATEWAY) -mb $(PROJECT).mw
+
+#
+clean: 
+	rm -f $(OBJS)
+# 
+list: $(FSRCS)
+	echo $^
+#
+distclean: 
+	rm -f $(OBJS) int2 fort.* *.o
+

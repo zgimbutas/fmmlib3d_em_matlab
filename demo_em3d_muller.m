@@ -9,6 +9,7 @@
 geom_type = 2;
 filename_geo = 'sphere180.a.tri';
 filename_geo = 'sphere320.a.tri';
+filename_geo = 'sphere720.a.tri';
 filename_geo = 'sphere1280.a.tri';
 filename_geo = 'sphere2880.a.tri';
 %filename_geo = 'sphere11520.a.tri';
@@ -17,18 +18,27 @@ filename_geo = 'sphere2880.a.tri';
 %filename_geo = 'cube_r2.a.tri';
 %filename_geo = 'cube_r3.a.tri';
 %filename_geo = 'cube_r4.a.tri';
-%filename_geo = '../hellskitchen/Data/cube768.a.tri';
-%filename_geo = '../hellskitchen/Data/cube3072.a.tri';
-%filename_geo = '../hellskitchen/Data/cube12288.a.tri';
+%filename_geo = '../../hellskitchen/Data/cube768.a.tri';
+%filename_geo = '../../hellskitchen/Data/cube3072.a.tri';
+%filename_geo = '../../hellskitchen/Data/cube12288.a.tri';
+
+%filename_geo = '1ellipsoid-25x25x75-draft.a.tri';
+%filename_geo = '1ellipsoid-25x25x75.a.tri';
+%filename_geo = '1ellipsoid-25x25x75-fine.a.tri';
+%filename_geo = '1ellipsoid-25x25x75-fine2.a.tri';
 
 [verts,ifaces,nverts,nfaces] = atriread(filename_geo);
 nverts,nfaces
 
-%  adjust refined cube
+%  shift, adjust refined cube
 %verts = verts-0.5
 
 %  ellipsoid
+%verts(2,:) = verts(2,:)*1.2;
 %verts(3,:) = verts(3,:)*1.5;
+
+%  scale
+%verts = verts*3;
 
 %
 %  Construct triangle vertex, normal, area, and centroid arrays
@@ -64,8 +74,40 @@ nsource = ntri;
 
 
 %%zk=2*pi/6
-zk=1
-A.zk = zk;
+%%zk=1
+%%A.zk = zk;
+
+
+% dielectric interface parameters
+omega=.4;
+%eps_i=(0.2039+3.3056*1i)^2;   % JCh gold at 620 nm
+%cmu_i=1;
+eps_i=1.4;
+cmu_i=1.2;
+eps_e=1;
+cmu_e=1;
+zk_i=omega*sqrt(eps_i)*sqrt(cmu_i);
+zk_e=omega*sqrt(eps_e)*sqrt(cmu_e);
+
+%wavelength = 620
+%omega=2*pi/wavelength;
+%eps_i=(0.2039+3.3056*1i)^2;   % JCh gold at 620 nm
+%cmu_i=1;
+%eps_e=1;
+%cmu_e=1;
+%zk_i=omega*sqrt(eps_i)*sqrt(cmu_i);
+%zk_e=omega*sqrt(eps_e)*sqrt(cmu_e);
+
+zk=zk_e;
+A.zk=zk;
+
+A.omega=omega;
+A.eps_i=eps_i;
+A.cmu_i=cmu_i;
+A.eps_e=eps_e;
+A.cmu_e=cmu_e;
+A.zk_i = zk_i;
+A.zk_e = zk_e;
 
 nsource = ntri;
 
@@ -87,8 +129,8 @@ A.source = source;
 %%%rhs = ones(3,nsource);
 
 ntest_source = 1;
-test_source = [0.01;-0.03;0.02];
 test_source = [100;-200;300];
+test_source = [0.01;-0.03;0.02];
 
 iftest_cjvec = 1;
 iftest_cmvec = 0;
@@ -106,38 +148,47 @@ ifhvectarg = 1;
       iftest_cjvec,test_cjvec,iftest_cmvec,test_cmvec,...
       ifevec,ifhvec,nsource,source,ifevectarg,ifhvectarg);
 
-%%%rhs = U.hvectarg;
-
+h = U.hvectarg;
+e = U.evectarg;
+nxh = cross(A.trianorm,U.hvectarg);
 nxe = cross(A.trianorm,U.evectarg);
-rhs = zeros(3,A.ntri);
-rhs(1,:) = dot(A.triatang1,nxe);
-rhs(2,:) = dot(A.triatang2,nxe);
-rhs(3,:) = dot(A.trianorm,U.evectarg);
+rhs = zeros(6,A.ntri);
+rhs(1,:) = dot(A.triatang1,nxh);
+rhs(2,:) = dot(A.triatang2,nxh);
+rhs(3,:) = dot(A.trianorm,U.evectarg) *A.eps_e;
+rhs(4,:) = dot(A.triatang1,nxe);
+rhs(5,:) = dot(A.triatang2,nxe);
+rhs(6,:) = -dot(A.trianorm,U.hvectarg) *A.cmu_e;
+
+% test exterior
+rhs=rhs;
 
 M = sqrt(triaarea)';
-M = repmat(M,1,3);
-M = reshape(M,1,3*nsource)';
+M = repmat(M,1,6);
+M = reshape(M,1,6*nsource)';
 %
 %  Call the solver
 %
-'Interior/Exterior augmented EFIE solver for the Maxwell equations in R^3'
+'Augmented Muller solver for the Maxwell equations in R^3'
 tic
-rhs0 = reshape(rhs,1,3*nsource);
-sol0 = gmres_simple(@(x) em3dmultfmmflat_aefie(A,x), rhs0.', 1e-2, 20);
-%%%sol0 = gmres_simple(@(x) M.*em3dmultfmmflat_aefie(A,x./M), M.*rhs0.', 1e-2, 20)./M;
+rhs0 = reshape(rhs,1,6*nsource);
+sol0 = gmres_simple(@(x) em3dmultfmmflat_muller(A,x), rhs0.', 1e-3, 20);
+%%%sol0 = gmres_simple(@(x) M.*em3dmultfmmflat_muller(A,x./M), M.*rhs0.', 1e-2, 20)./M;
 sol0 = sol0.';
-sol = reshape(sol0,3,nsource);
+sol = reshape(sol0,6,nsource);
 time_gmres=toc
 
 jvec = repmat(sol(1,:),3,1).*A.triatang1+repmat(sol(2,:),3,1).*A.triatang2;
 rhoe = sol(3,:);
+mvec = repmat(sol(4,:),3,1).*A.triatang1+repmat(sol(5,:),3,1).*A.triatang2;
+rhom = sol(6,:);
 
 %
 %  Evaluate fields directly
 %
 ntarget = 1;
-target = [100;-200;300];
 target = [0.01;-0.03;0.02];
+target = [100;-200;300];
 
 %%%target = [100;200;-300];
 
@@ -159,11 +210,11 @@ if( ifhvectarg == 1 ), hvec = U.hvectarg; end
 tic
 
 ifcjvec=1;
-ifcmvec=0;
-cjvec=jvec.*repmat(triaarea,3,1);
+ifcmvec=1;
+cjvec=jvec.*repmat(triaarea,3,1) *A.eps_e;
 rho_e=rhoe.*repmat(triaarea,1,1);
-cmvec=zeros(3,nsource);
-rho_m=zeros(1,nsource);
+cmvec=mvec.*repmat(triaarea,3,1) *A.cmu_e;
+rho_m=rhom.*repmat(triaarea,1,1);
 
 if( 1 == 2 ),
 [U]=em3dpartdirect(zk,nsource,source,...
