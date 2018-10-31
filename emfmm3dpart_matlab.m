@@ -71,14 +71,6 @@ function [U]=emfmm3dpart_matlab(iprec,zk,nsource,source,ifcjvec,cjvec,ifcmvec,cm
 %             ier=16    =>  cannot allocate mpole expansion workspace in FMM
 %
 
-if( ifevec ~= ifhvec ),
-  error('emfmm3dpart: not implemented')
-end
-
-if( ifevectarg ~= ifhvectarg ),
-  error('emfmm3dpart: not implemented')
-end
-
 if( nargin == 10 ) 
   ntarget = 0;
   target = zeros(3,1);
@@ -89,6 +81,14 @@ end
 if( nargin == 12 ) 
   ifevectarg = 0;
   ifhvectarg = 0;
+end
+
+if( ifevec ~= ifhvec ),
+  error('emfmm3dpart: not implemented')
+end
+
+if( ifevectarg ~= ifhvectarg ),
+  error('emfmm3dpart: not implemented')
 end
 
 
